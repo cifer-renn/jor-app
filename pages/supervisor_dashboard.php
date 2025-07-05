@@ -67,6 +67,10 @@ $stmt->close();
                     <i class="bi bi-people"></i>
                     Manage Users
                 </a>
+                <a href="supervisor_reports.php" class="btn btn-outline-success btn-icon">
+                    <i class="bi bi-bar-chart-line"></i>
+                    View Reports
+                </a>
             </div>
         </div>
     </div>
@@ -300,8 +304,8 @@ $stmt->close();
                         <i class="bi bi-people"></i>
                         Manage Users
                     </a>
-                    <a href="reports.php" class="btn btn-outline-info btn-icon">
-                        <i class="bi bi-graph-up"></i>
+                    <a href="supervisor_reports.php" class="btn btn-outline-success btn-icon">
+                        <i class="bi bi-bar-chart-line"></i>
                         View Reports
                     </a>
                 </div>
