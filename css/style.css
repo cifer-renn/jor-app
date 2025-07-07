@@ -442,4 +442,333 @@ body {
 }
 
 /* Make small muted text white for all users */
-/* This rule is now more specific in .sidebar-footer */ 
+/* This rule is now more specific in .sidebar-footer */
+
+/* Avatar Styling */
+.avatar-upload {
+    border: 2px dashed #dee2e6;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.avatar-upload:hover {
+    border-color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.avatar-preview {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.avatar-preview:hover {
+    border-color: #007bff;
+    transform: scale(1.05);
+}
+
+.avatar-placeholder {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background-color: #f8f9fa;
+    border: 3px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    font-size: 3rem;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.avatar-upload-area {
+    position: relative;
+    overflow: hidden;
+}
+
+.avatar-upload-area input[type="file"] {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.avatar-upload-area:hover {
+    background-color: #f8f9fa;
+}
+
+/* Notification Bell Styling */
+.notification-bell {
+    position: relative;
+}
+
+.notification-dropdown {
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border-radius: 0.5rem;
+}
+
+.notification-item {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f8f9fa;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.notification-item:hover {
+    background-color: #f8f9fa;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item.unread {
+    background-color: #e3f2fd;
+}
+
+.notification-item.unread:hover {
+    background-color: #bbdefb;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.notification-dropdown .dropdown-header {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+}
+
+.notification-dropdown .dropdown-divider {
+    margin: 0;
+}
+
+.notification-dropdown .dropdown-item {
+    padding: 0.75rem 1rem;
+}
+
+.notification-dropdown .dropdown-item:active {
+    background-color: #e9ecef;
+}
+
+/* Notification animations */
+@keyframes notificationPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.notification-bell.has-notifications .btn {
+    animation: notificationPulse 2s infinite;
+}
+
+/* Responsive notification bell */
+@media (max-width: 768px) {
+    .notification-dropdown {
+        width: 300px !important;
+        max-width: 90vw;
+    }
+    
+    .notification-bell {
+        margin-right: 0.5rem !important;
+    }
+}
+
+/* Notification Animations */
+@keyframes notificationSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes notificationPulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+    }
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+    }
+}
+
+@keyframes markAsRead {
+    0% {
+        background-color: #e3f2fd;
+        transform: scale(1);
+    }
+    50% {
+        background-color: #f8f9fa;
+        transform: scale(1.02);
+    }
+    100% {
+        background-color: #ffffff;
+        transform: scale(1);
+    }
+}
+
+@keyframes badgeBounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-5px);
+    }
+    60% {
+        transform: translateY(-3px);
+    }
+}
+
+/* Animation Classes */
+.notification-item {
+    animation: notificationSlideIn 0.3s ease-out;
+}
+
+.notification-item.marking-read {
+    animation: markAsRead 0.3s ease-in-out;
+}
+
+.notification-bell.has-notifications .btn {
+    animation: notificationPulse 2s infinite;
+}
+
+.notification-bell .badge {
+    animation: badgeBounce 0.6s ease-out;
+}
+
+/* Hover animations */
+.notification-item:hover {
+    transform: translateX(5px);
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.notification-item:active {
+    transform: translateX(5px) scale(0.98);
+    transition: all 0.1s ease;
+}
+
+.notification-dropdown {
+    animation: notificationSlideIn 0.2s ease-out;
+}
+
+/* Smooth transitions */
+.notification-item {
+    transition: all 0.3s ease;
+}
+
+.notification-item.unread {
+    border-left: 4px solid #007bff;
+    background-color: #e3f2fd;
+}
+
+.notification-item.unread:hover {
+    background-color: #bbdefb;
+    border-left-color: #0056b3;
+}
+
+/* Read state transition */
+.notification-item:not(.unread) {
+    border-left: 4px solid transparent;
+    background-color: #ffffff;
+}
+
+/* Icon animations */
+.notification-item .bi {
+    transition: all 0.2s ease;
+}
+
+.notification-item:hover .bi {
+    transform: scale(1.1);
+}
+
+/* Dropdown animations */
+.dropdown-menu.show {
+    animation: notificationSlideIn 0.2s ease-out;
+}
+
+/* Badge animations */
+.badge {
+    transition: all 0.3s ease;
+}
+
+.badge:hover {
+    transform: scale(1.1);
+}
+
+/* Loading animation for AJAX requests */
+.notification-item.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.notification-item.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Text truncation for notification headers */
+.notification-item .text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.notification-item .min-w-0 {
+    min-width: 0;
+}
+
+.notification-item .flex-grow-1 {
+    overflow: hidden;
+} 

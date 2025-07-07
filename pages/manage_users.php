@@ -88,7 +88,7 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
 
 // Get all users
 $users = [];
-$stmt = $conn->prepare("SELECT id, username, role, created_at FROM users ORDER BY created_at DESC");
+$stmt = $conn->prepare("SELECT id, username, role, created_at, avatar_path FROM users ORDER BY created_at DESC");
 $stmt->execute();
 $result = $stmt->get_result();
 while ($row = $result->fetch_assoc()) {
@@ -142,7 +142,12 @@ $stmt->close();
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div class="avatar me-2">
-                                            <i class="bi bi-person-circle fs-4"></i>
+                                            <?php if (!empty($user['avatar_path'])): ?>
+                                                <img src="../<?php echo htmlspecialchars($user['avatar_path']); ?>" 
+                                                     alt="User Avatar" class="user-avatar">
+                                            <?php else: ?>
+                                                <i class="bi bi-person-circle fs-4"></i>
+                                            <?php endif; ?>
                                         </div>
                                         <div>
                                             <strong><?php echo htmlspecialchars($user['username']); ?></strong>

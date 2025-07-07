@@ -36,21 +36,6 @@ function check_stock_for_job($conn, $job_id) {
     return ['requirements' => $requirements, 'insufficient' => $insufficient_items];
 }
 
-// Handle Material Request Submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_materials'])) {
-    $job_id = (int)$_POST['job_id'];
-    $notes = trim($_POST['request_notes']);
-
-    $req_stmt = $conn->prepare("INSERT INTO material_requests (job_id, requested_by_id, request_notes) VALUES (?, ?, ?)");
-    $req_stmt->bind_param("iis", $job_id, $operator_id, $notes);
-    if ($req_stmt->execute()) {
-        $success_message = "Material request submitted successfully.";
-    } else {
-        $error_message = "Failed to submit material request.";
-    }
-    $req_stmt->close();
-}
-
 // Handle "Take Job" submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['take_job'])) {
     $job_id = (int)$_POST['job_id'];
@@ -76,22 +61,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
 
     // Handle re-submission of a rejected job
     if ($is_resubmit) {
-        $update_stmt = $conn->prepare("UPDATE jobs SET verification_status = 'pending_verification', status = 'completed', notes = CONCAT(COALESCE(notes, ''), ?) WHERE id = ? AND operator_id = ?");
-        $formatted_note = "\n[Re-submitted by Operator on " . date('Y-m-d H:i') . "]: " . $notes;
-        $update_stmt->bind_param("sii", $formatted_note, $job_id, $operator_id);
-        if ($update_stmt->execute()) {
-            $success_message = "Job re-submitted for verification successfully!";
-        } else {
-            $error_message = "Error re-submitting job.";
+        try {
+            $update_stmt = $conn->prepare("UPDATE jobs SET verification_status = 'pending_verification', status = 'completed', completed_at = NOW(), notes = ? WHERE id = ? AND operator_id = ?");
+            $formatted_note = "[Re-submitted by Operator on " . date('Y-m-d H:i') . "]: " . $notes;
+            $update_stmt->bind_param("sii", $formatted_note, $job_id, $operator_id);
+            if ($update_stmt->execute()) {
+                $success_message = "Job re-submitted for verification successfully!";
+            } else {
+                $error_message = "Error re-submitting job.";
+            }
+            $update_stmt->close();
+        } catch (Exception $e) {
+            $error_message = "Error re-submitting job: " . $e->getMessage();
         }
-        $update_stmt->close();
     }
     // Handle normal status updates
     else if ($new_status === 'in_progress' || $new_status === 'completed') {
         $stock_check = check_stock_for_job($conn, $job_id);
         if (!empty($stock_check['insufficient'])) {
             $item_list = implode(', ', array_map(fn($item) => $item['name'], $stock_check['insufficient']));
-            $error_message = "Cannot proceed: Insufficient stock for {$item_list}. Please request materials.";
+            $error_message = "Cannot proceed: Insufficient stock for {$item_list}. Please submit a material application.";
         } else {
             // All clear, proceed with update
             if ($new_status === 'completed') {
@@ -114,8 +103,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
                     }
 
                     // 2. Update job status
-                    $update_stmt = $conn->prepare("UPDATE jobs SET status = ?, verification_status = 'pending_verification', notes = CONCAT(COALESCE(notes, ''), ?) WHERE id = ? AND operator_id = ?");
-                    $formatted_note = "\n[Completed by Operator on " . date('Y-m-d H:i') . "]: " . $notes;
+                    $update_stmt = $conn->prepare("UPDATE jobs SET status = ?, verification_status = 'pending_verification', completed_at = NOW(), notes = ? WHERE id = ? AND operator_id = ?");
+                    $formatted_note = "[Completed by Operator on " . date('Y-m-d H:i') . "]: " . $notes;
                     $update_stmt->bind_param("ssii", $new_status, $formatted_note, $job_id, $operator_id);
                     $update_stmt->execute();
                     
@@ -138,8 +127,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
                 $check_result = $check_stmt->get_result();
 
                 if ($check_result->num_rows === 1) {
-                    $update_stmt = $conn->prepare("UPDATE jobs SET status = ?, notes = CONCAT(COALESCE(notes, ''), ?) WHERE id = ?");
-                    $formatted_note = "\n[Update by Operator on " . date('Y-m-d H:i') . "]: " . $notes;
+                    $update_stmt = $conn->prepare("UPDATE jobs SET status = ?, notes = ? WHERE id = ?");
+                    $formatted_note = "[Update by Operator on " . date('Y-m-d H:i') . "]: " . $notes;
                     $update_stmt->bind_param("ssi", $new_status, $formatted_note, $job_id);
 
                     if ($update_stmt->execute()) {
@@ -161,8 +150,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
         $check_result = $check_stmt->get_result();
 
         if ($check_result->num_rows === 1) {
-            $update_stmt = $conn->prepare("UPDATE jobs SET status = ?, notes = CONCAT(COALESCE(notes, ''), ?) WHERE id = ?");
-            $formatted_note = "\n[Update by Operator on " . date('Y-m-d H:i') . "]: " . $notes;
+            $update_stmt = $conn->prepare("UPDATE jobs SET status = ?, notes = ? WHERE id = ?");
+            $formatted_note = "[Update by Operator on " . date('Y-m-d H:i') . "]: " . $notes;
             $update_stmt->bind_param("ssi", $new_status, $formatted_note, $job_id);
 
             if ($update_stmt->execute()) {
@@ -249,6 +238,20 @@ $stmt->close();
         <p class="text-muted mb-0">Welcome back, <?php echo htmlspecialchars($_SESSION['username']); ?>! Here are your assigned jobs.</p>
     </div>
 </div>
+
+<?php if (!empty($success_message)): ?>
+    <div class="alert alert-success d-flex align-items-center">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <?php echo $success_message; ?>
+    </div>
+<?php endif; ?>
+
+<?php if (!empty($error_message)): ?>
+    <div class="alert alert-danger d-flex align-items-center">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <?php echo $error_message; ?>
+    </div>
+<?php endif; ?>
 
 <!-- Statistics Cards -->
 <div class="row mb-4">
@@ -545,33 +548,6 @@ $stmt->close();
     </div>
 </div>
 
-<!-- Material Request Modal -->
-<div class="modal fade" id="requestModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-send me-2"></i>Request Materials</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" action="operator_dashboard.php">
-                <div class="modal-body">
-                    <input type="hidden" name="request_materials" value="1">
-                    <input type="hidden" id="requestJobId" name="job_id">
-                    <div class="mb-3">
-                        <label for="request_notes" class="form-label">Notes for Warehouse Manager</label>
-                        <textarea class="form-control" id="request_notes" name="request_notes" rows="4" placeholder="e.g., Please restock the following items..."></textarea>
-                    </div>
-                    <div id="request-insufficient-list"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Submit Request</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <script>
 async function updateJobStatus(jobId, currentStatus, verificationStatus) {
     const statusModal = new bootstrap.Modal(document.getElementById('statusModal'));
@@ -604,7 +580,7 @@ async function updateJobStatus(jobId, currentStatus, verificationStatus) {
     }
 
     try {
-        const response = await fetch(`check_stock.php?job_id=${jobId}`);
+        const response = await fetch(`check_job_stock.php?job_id=${jobId}`);
         const data = await response.json();
 
         if (!data.sufficient) {
@@ -616,12 +592,16 @@ async function updateJobStatus(jobId, currentStatus, verificationStatus) {
                         <p>Cannot start or complete this job due to low stock for the following items:</p>
                         <ul>${itemsList}</ul>
                     </div>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Solution:</strong> Please submit a material application to request the needed items.
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" onclick="openRequestModal(${jobId}, '${JSON.stringify(data.items)}')">
-                        <i class="bi bi-send me-1"></i>Request Materials
-                    </button>
+                    <a href="material_form.php" class="btn btn-primary">
+                        <i class="bi bi-file-earmark-plus me-1"></i>Submit Material Application
+                    </a>
                 </div>
             `;
         } else {
@@ -639,8 +619,8 @@ async function updateJobStatus(jobId, currentStatus, verificationStatus) {
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label for="notes" class="form-label">Notes</label>
-                            <textarea class="form-control" name="notes" rows="3"></textarea>
+                            <label for="notes" class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" name="notes" rows="3" placeholder="Add any notes about the job progress..."></textarea>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -653,20 +633,6 @@ async function updateJobStatus(jobId, currentStatus, verificationStatus) {
     } catch (error) {
         modalBody.innerHTML = '<div class="alert alert-danger m-3">Error checking stock. Please try again.</div>';
     }
-}
-
-function openRequestModal(jobId, insufficientItems) {
-    const statusModal = bootstrap.Modal.getInstance(document.getElementById('statusModal'));
-    statusModal.hide();
-
-    const requestModal = new bootstrap.Modal(document.getElementById('requestModal'));
-    document.getElementById('requestJobId').value = jobId;
-    
-    let items = JSON.parse(insufficientItems);
-    let itemsList = items.map(item => `<li>${item.name}</li>`).join('');
-    document.getElementById('request-insufficient-list').innerHTML = `<p class="mt-3"><strong>Items to request:</strong></p><ul>${itemsList}</ul>`;
-    
-    requestModal.show();
 }
 </script>
 

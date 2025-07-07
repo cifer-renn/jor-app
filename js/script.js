@@ -1,6 +1,5 @@
 // Custom JavaScript for the Job Order Request application
 // This file can be used for interactive features like form validation, AJAX requests, etc.
-console.log("Job Order Request application script loaded.");
 
 // Sidebar toggle functionality
 document.addEventListener('DOMContentLoaded', function() {

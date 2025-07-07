@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'supervisor') {
 }
 
 require_once '../includes/database.php';
+require_once '../includes/notifications.php';
 
 $success_message = '';
 $error_message = '';
@@ -26,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $conn->begin_transaction();
         try {
-            $stmt = $conn->prepare("INSERT INTO jobs (title, description, priority, supervisor_id, operator_id) VALUES (?, ?, ?, ?, ?)");
+            $stmt = $conn->prepare("INSERT INTO jobs (title, description, priority, supervisor_id, operator_id, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
             $stmt->bind_param("sssii", $title, $description, $priority, $_SESSION['user_id'], $operator_id);
             $stmt->execute();
             $job_id = $stmt->insert_id;
@@ -44,6 +45,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $conn->commit();
+            
+            // Create notification for supervisor
+            create_notification(
+                $_SESSION['user_id'],
+                'job_created',
+                'Job Created Successfully',
+                'Job "' . $title . '" has been created and is ready for assignment.',
+                'pages/view_job.php?id=' . $job_id
+            );
+            
+            // Create notification for assigned operator if any
+            if ($operator_id) {
+                create_notification(
+                    $operator_id,
+                    'job_assigned',
+                    'New Job Assigned',
+                    'You have been assigned a new job: "' . $title . '".',
+                    'pages/view_operator_job.php?id=' . $job_id
+                );
+            } else {
+                // Notify all operators about available job
+                $op_stmt = $conn->prepare("SELECT id FROM users WHERE role = 'machine_operator'");
+                $op_stmt->execute();
+                $op_result = $op_stmt->get_result();
+                while ($op = $op_result->fetch_assoc()) {
+                    create_notification(
+                        $op['id'],
+                        'job_available',
+                        'Available Job',
+                        'There is an available job. Please take it.',
+                        'pages/operator_dashboard.php'
+                    );
+                }
+                $op_stmt->close();
+            }
+            
             $success_message = "Job order created successfully!";
             $_POST = array(); // Clear form data on success
 
